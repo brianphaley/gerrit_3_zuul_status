@@ -2,6 +2,7 @@
 // Copyright 2019-2020 Radosław Piliszek
 // Copyright 2020 Balazs Gibizer
 // Copyright 2022 Bernard Cafarelli
+// Copyright 2026 Brian Haley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,7 +26,8 @@
 // @author   Radosław Piliszek
 // @author   Balazs Gibizer
 // @author   Bernard Cafarelli
-// @version  10.0.0
+// @author   Brian Haley
+// @version  11.0.0
 // @match    https://review.opendev.org/*
 // @description  Display Zuul Status on main page with Gerrit 3
 // ==/UserScript==
@@ -57,7 +59,11 @@ function live_render(jobs) {
         } else if (job.status === 'success') {
             color = 'green';
         } else {
-            color = 'red';
+            if (job.voting) {
+                color = 'red';
+            } else {
+                color = 'orange';
+            }
         }
         const status_with_completeness = ((job.status === "running" && typeof job.completeness !== "undefined") ? "RUNNING (" + job.completeness + ")" : job.status.toUpperCase());
         const voting = job.voting ? "" : "<span style=\"font-size: small;\">&nbsp;(non-voting)</span>";
@@ -231,18 +237,19 @@ const get_ci_table = function(json_result){
         a.appendChild(link_text);
         td2.appendChild(a);
 
-        if (build.result == 'SUCCESS'){
+        // There are a lot of build result strings possible:
+        // SUCCESS, FAILURE, POST_FAILURE, TIMED_OUT, RETRY, RETRY_LIMIT
+        // and possibly more.
+        // By default, successful jobs are displayed in Green, voting jobs
+        // that fail in Red and non-voting jobs that fail in Orange.
+        if (build.result == 'SUCCESS') {
             a.style.color = 'green';
-        }
-        if (build.result == 'FAILURE'){
+        } else if (build.voting) {
             a.style.color = 'red';
-        }
-        if (build.result == 'POST_FAILURE'){
+        } else {
             a.style.color = 'orange';
         }
-        if (build.result == 'TIMED_OUT'){
-            a.style.color = 'red';
-        }
+
         tr.appendChild(td2);
 
         table.appendChild(tr);
